@@ -1,8 +1,8 @@
-import sys
 import math
 import random
+import sys
 from enum import Enum
-from typing import List, Tuple, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 import pygame
 
@@ -33,7 +33,7 @@ GHOST_RESPAWN_TIME = 3.0  # seconds in house after eaten
 
 # Movement
 PLAYER_SPEED = 4.0  # tiles per second
-GHOST_SPEED = 3.5   # tiles per second
+GHOST_SPEED = 3.5  # tiles per second
 VULNERABLE_GHOST_SPEED = 2.4
 
 Vec2 = Tuple[int, int]
@@ -80,13 +80,13 @@ class Maze:
 
         for y, row in enumerate(layout):
             for x, ch in enumerate(row):
-                if ch == '#':
+                if ch == "#":
                     self.walls.add((x, y))
-                elif ch == 'H':
+                elif ch == "H":
                     self.doors.add((x, y))
-                elif ch == '.':
+                elif ch == ".":
                     self.pellets.add((x, y))
-                elif ch == 'o':
+                elif ch == "o":
                     self.power_pellets.add((x, y))
 
     def in_bounds(self, cell: Vec2) -> bool:
@@ -128,19 +128,21 @@ class Maze:
 
     def draw(self, surf: pygame.Surface):
         # draw walls
-        for (x, y) in self.walls:
+        for x, y in self.walls:
             rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(surf, BLUE, rect)
         # draw doors
-        for (x, y) in self.doors:
+        for x, y in self.doors:
             cx, cy = grid_to_px((x, y))
-            pygame.draw.line(surf, GREY, (cx - TILE_SIZE // 2, cy), (cx + TILE_SIZE // 2, cy), 2)
+            pygame.draw.line(
+                surf, GREY, (cx - TILE_SIZE // 2, cy), (cx + TILE_SIZE // 2, cy), 2
+            )
         # draw pellets
-        for (x, y) in self.pellets:
+        for x, y in self.pellets:
             cx, cy = grid_to_px((x, y))
             pygame.draw.circle(surf, WHITE, (cx, cy), 3)
         # draw power pellets
-        for (x, y) in self.power_pellets:
+        for x, y in self.power_pellets:
             cx, cy = grid_to_px((x, y))
             pygame.draw.circle(surf, WHITE, (cx, cy), 6)
 
@@ -176,7 +178,10 @@ class Player:
     def update(self, maze: Maze, dt: float):
         # attempt to switch direction when centered
         if self.next_dir != self.dir and self.at_center_of_cell():
-            target_cell = (px_to_grid(self.pos)[0] + self.next_dir[0], px_to_grid(self.pos)[1] + self.next_dir[1])
+            target_cell = (
+                px_to_grid(self.pos)[0] + self.next_dir[0],
+                px_to_grid(self.pos)[1] + self.next_dir[1],
+            )
             if maze.passable_for(target_cell):
                 self.dir = self.next_dir
         # move
@@ -192,7 +197,10 @@ class Player:
             new_pos[0] = TILE_SIZE / 2
 
         # collision with walls: only allow moving into passable cells
-        next_cell = (px_to_grid(self.pos)[0] + self.dir[0], px_to_grid(self.pos)[1] + self.dir[1])
+        next_cell = (
+            px_to_grid(self.pos)[0] + self.dir[0],
+            px_to_grid(self.pos)[1] + self.dir[1],
+        )
         if maze.passable_for(next_cell):
             self.pos = new_pos
         else:
@@ -201,14 +209,18 @@ class Player:
             self.dir = (0, 0)
 
     def draw(self, surf: pygame.Surface):
-        pygame.draw.circle(surf, YELLOW, (int(self.pos[0]), int(self.pos[1])), self.radius)
+        pygame.draw.circle(
+            surf, YELLOW, (int(self.pos[0]), int(self.pos[1])), self.radius
+        )
 
 
 # ----------------------------
 # Ghosts
 # ----------------------------
 class Ghost:
-    def __init__(self, start_cell: Vec2, color: Tuple[int, int, int], name: str = "ghost"):
+    def __init__(
+        self, start_cell: Vec2, color: Tuple[int, int, int], name: str = "ghost"
+    ):
         self.name = name
         self.start_cell = start_cell
         self.cell = start_cell
@@ -268,8 +280,11 @@ class Ghost:
         elif grid_y == 14 and grid_x >= maze.width:
             new_pos[0] = TILE_SIZE / 2
 
-        next_cell = (px_to_grid(self.pos)[0] + self.dir[0], px_to_grid(self.pos)[1] + self.dir[1])
-        allow_door = (self.state == GhostState.EATEN)
+        next_cell = (
+            px_to_grid(self.pos)[0] + self.dir[0],
+            px_to_grid(self.pos)[1] + self.dir[1],
+        )
+        allow_door = self.state == GhostState.EATEN
         if maze.passable_for(next_cell, allow_door=allow_door):
             self.pos = new_pos
         else:
@@ -294,7 +309,9 @@ class Ghost:
             color = GREY
         else:
             color = self.color
-        pygame.draw.circle(surf, color, (int(self.pos[0]), int(self.pos[1])), self.radius)
+        pygame.draw.circle(
+            surf, color, (int(self.pos[0]), int(self.pos[1])), self.radius
+        )
 
 
 class ChaserGhost(Ghost):
@@ -308,14 +325,14 @@ class ChaserGhost(Ghost):
             if (-d[0], -d[1]) == self.dir:
                 continue
             nc = (cx + d[0], cy + d[1])
-            allow_door = (self.state == GhostState.EATEN)
+            allow_door = self.state == GhostState.EATEN
             if maze.passable_for(nc, allow_door=allow_door):
                 options.append(d)
         if not options:
             # allow reverse if blocked
             for d in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
                 nc = (cx + d[0], cy + d[1])
-                allow_door = (self.state == GhostState.EATEN)
+                allow_door = self.state == GhostState.EATEN
                 if maze.passable_for(nc, allow_door=allow_door):
                     options.append(d)
         if not options:
@@ -334,7 +351,11 @@ class ChaserGhost(Ghost):
             score = manhattan(nc)
             if self.state == GhostState.VULNERABLE:
                 score = -score
-            if best is None or (score < best_score if self.state != GhostState.VULNERABLE else score > best_score):
+            if best is None or (
+                score < best_score
+                if self.state != GhostState.VULNERABLE
+                else score > best_score
+            ):
                 best = d
                 best_score = score
         self.dir = best
@@ -350,22 +371,24 @@ class RandomGhost(Ghost):
             if (-d[0], -d[1]) == self.dir:
                 continue
             nc = (cx + d[0], cy + d[1])
-            allow_door = (self.state == GhostState.EATEN)
+            allow_door = self.state == GhostState.EATEN
             if maze.passable_for(nc, allow_door=allow_door):
                 options.append(d)
         if not options:
             # allow reverse
             for d in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
                 nc = (cx + d[0], cy + d[1])
-                allow_door = (self.state == GhostState.EATEN)
+                allow_door = self.state == GhostState.EATEN
                 if maze.passable_for(nc, allow_door=allow_door):
                     options.append(d)
         if options:
             # If vulnerable, bias away from player by choosing the dir that increases distance 70% of time
             if self.state == GhostState.VULNERABLE and random.random() < 0.7:
+
                 def dist(dir):
                     nc = (cx + dir[0], cy + dir[1])
                     return abs(nc[0] - player_cell[0]) + abs(nc[1] - player_cell[1])
+
                 options.sort(key=lambda d: dist(d), reverse=True)
                 self.dir = options[0]
             else:
@@ -522,7 +545,9 @@ class Game:
         for g in self.ghosts:
             g.set_vulnerable()
 
-    def check_collision(self, pos1: Tuple[float, float], pos2: Tuple[float, float]) -> bool:
+    def check_collision(
+        self, pos1: Tuple[float, float], pos2: Tuple[float, float]
+    ) -> bool:
         return math.hypot(pos1[0] - pos2[0], pos1[1] - pos2[1]) < TILE_SIZE * 0.6
 
     def draw_hud(self):
